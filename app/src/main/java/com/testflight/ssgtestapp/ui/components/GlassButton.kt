@@ -1,7 +1,7 @@
 package com.testflight.ssgtestapp.ui.components
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.testflight.ssgtestapp.ui.theme.ptSansFontFamily
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.pow
@@ -112,7 +114,8 @@ fun GlassButton(
     topEdgeHighlightOpacity: Float = 0.15f,
     bottomEdgeHighlightOpacity: Float = 0.35f,
     edgeHighlightStrokeWidth: Dp = 4.dp,
-    textSize: TextUnit = 48.sp,
+    fontFamily: FontFamily = ptSansFontFamily,
+    textSize: TextUnit = 38.sp,
     textWeight: FontWeight = FontWeight.Medium,
     textAlign: TextAlign = TextAlign.Center,
     maxLines: Int = Int.MAX_VALUE,
@@ -186,6 +189,7 @@ fun GlassButton(
         Text(
             text = text,
             color = if (enabled) textColor else textColor.copy(alpha = DISABLED_TEXT_ALPHA),
+            fontFamily = fontFamily,
             fontSize = textSize,
             fontWeight = textWeight,
             textAlign = textAlign,
@@ -270,28 +274,28 @@ private fun rememberAnimatedValues(
     // Animate depth: collapse to 0 when pressed or disabled
     val animatedDepth by animateDpAsState(
         targetValue = if (state.isPressedOrDisabled) 0.dp else depth,
-        animationSpec = tween(duration),
+        animationSpec = spring(),
         label = "depth"
     )
 
-    // Animate vertical offset: move down by depth amount when pressed
+    // Animate vertical offset: move down to the end of the shadow when pressed
     val animatedYOffset by animateDpAsState(
-        targetValue = if (state.isPressedAndEnabled) depth else 0.dp,
-        animationSpec = tween(duration),
+        targetValue = if (state.isPressedAndEnabled) shadowVerticalExpansion + depth else 0.dp,
+        animationSpec = spring(),
         label = "yOffset"
     )
 
     // Animate horizontal shadow: reduce when pressed
     val animatedShadowHorizontal by animateDpAsState(
         targetValue = if (state.isPressedAndEnabled) shadowPressedExpansion else shadowHorizontalExpansion,
-        animationSpec = tween(duration),
+        animationSpec = spring(),
         label = "shadowHorizontal"
     )
 
     // Animate vertical shadow: reduce when pressed
     val animatedShadowVertical by animateDpAsState(
         targetValue = if (state.isPressedAndEnabled) shadowPressedExpansion else shadowVerticalExpansion,
-        animationSpec = tween(duration),
+        animationSpec = spring(),
         label = "shadowVertical"
     )
 

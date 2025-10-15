@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.testflight.ssgtestapp.ui.theme.ptSansFontFamily
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -89,9 +91,10 @@ fun SecondaryGlassButton(
     shadowElevation: Dp = 4.dp,
     pressOffset: Dp = 2.dp,
     springDampingRatio: Float = 0.7f,
-    springStiffness: Float = 0f,
+    springStiffness: Float = 150f,
+    fontFamily: FontFamily = ptSansFontFamily,
     fontSize: TextUnit = 18.sp,
-    fontWeight: FontWeight = FontWeight.Normal,
+    fontWeight: FontWeight = FontWeight.Bold,
     textColor: Color = Color.White
 ) {
     // Track press state
@@ -105,10 +108,11 @@ fun SecondaryGlassButton(
 
     // Measure text once and cache result for performance
     val textMeasurer = rememberTextMeasurer()
-    val textLayoutResult = remember(text, fontSize, fontWeight, textColor) {
+    val textLayoutResult = remember(text, fontFamily, fontSize, fontWeight, textColor) {
         textMeasurer.measure(
             text = text,
             style = TextStyle(
+                fontFamily = fontFamily,
                 fontSize = fontSize,
                 fontWeight = fontWeight,
                 color = textColor
