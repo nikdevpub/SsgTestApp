@@ -3,11 +3,11 @@ package com.testflight.ssgtestapp.ui.components
 import android.graphics.BlurMaskFilter
 import android.graphics.Paint
 import android.os.Build
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -15,10 +15,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -29,7 +26,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
@@ -40,9 +36,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import com.testflight.ssgtestapp.ui.theme.interSemiBold
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 /**
  * Modern animated glass-style button with gradient background and ultra-smooth press animations.
@@ -99,16 +94,19 @@ fun SecondaryGlassButton(
     fontWeight: FontWeight = FontWeight.SemiBold,
     textColor: Color = Color.White
 ) {
-    // Track press state
-    var isPressed by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Notify parent component of press state changes
+    val progress = remember { androidx.compose.animation.core.Animatable(0f) }
+
     LaunchedEffect(isPressed) {
         onPressChange?.invoke(isPressed)
+        progress.animateTo(
+            targetValue = if (isPressed) 1f else 0f,
+            animationSpec = tween(durationMillis = animationDuration)
+        )
     }
 
-    // Measure text once and cache result for performance
     val textMeasurer = rememberTextMeasurer()
     val textLayoutResult = remember(text, fontFamily, fontSize, fontWeight, textColor) {
         textMeasurer.measure(
@@ -122,98 +120,28 @@ fun SecondaryGlassButton(
         )
     }
 
-    // Tween animation specification for fixed duration with ease out
-    val tweenSpec = remember(animationDuration) {
-        tween<Float>(durationMillis = animationDuration, easing = EaseOut)
-    }
+    val animatedProgress = progress.value
 
-    // Animatable values for ultra-smooth transitions
-    val shadowAlphaAnimatable = remember { Animatable(1f) }
-    val verticalOffsetAnimatable = remember { Animatable(0f) }
-    val topAlphaAnimatable = remember { Animatable(normalGradientAlphas.first) }
-    val bottomAlphaAnimatable = remember { Animatable(normalGradientAlphas.second) }
-    val borderAlphaAnimatable = remember { Animatable(0.05f) }
-    val borderColorProgressAnimatable = remember { Animatable(0f) }
-    val backgroundColorProgressAnimatable = remember { Animatable(0f) }
-
-    // Animate all values simultaneously when press state changes
-    LaunchedEffect(isPressed) {
-        coroutineScope.launch {
-            launch {
-                shadowAlphaAnimatable.animateTo(
-                    targetValue = if (isPressed) 0f else 1f,
-                    animationSpec = tweenSpec
-                )
-            }
-            launch {
-                verticalOffsetAnimatable.animateTo(
-                    targetValue = if (isPressed) pressOffset.value else 0f,
-                    animationSpec = tweenSpec
-                )
-            }
-            launch {
-                topAlphaAnimatable.animateTo(
-                    targetValue = if (isPressed) pressedGradientAlphas.first else normalGradientAlphas.first,
-                    animationSpec = tweenSpec
-                )
-            }
-            launch {
-                bottomAlphaAnimatable.animateTo(
-                    targetValue = if (isPressed) pressedGradientAlphas.second else normalGradientAlphas.second,
-                    animationSpec = tweenSpec
-                )
-            }
-            launch {
-                borderAlphaAnimatable.animateTo(
-                    targetValue = if (isPressed) 0.7f else 0.05f,
-                    animationSpec = tweenSpec
-                )
-            }
-            launch {
-                borderColorProgressAnimatable.animateTo(
-                    targetValue = if (isPressed) 1f else 0f,
-                    animationSpec = tweenSpec
-                )
-            }
-            launch {
-                backgroundColorProgressAnimatable.animateTo(
-                    targetValue = if (isPressed) 1f else 0f,
-                    animationSpec = tweenSpec
-                )
-            }
-        }
-    }
+    val animatedOffset = pressOffset * animatedProgress
 
     Box(
         modifier = modifier
             .widthIn(min = minWidth)
             .heightIn(min = minHeight)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onTap = { onClick() }
-                )
-            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
     ) {
         Canvas(
             modifier = Modifier
                 .matchParentSize()
-                .offset {
-                    IntOffset(
-                        x = 0,
-                        y = (verticalOffsetAnimatable.value * density).roundToInt()
-                    )
-                }
+                .offset { IntOffset(0, animatedOffset.roundToPx()) }
         ) {
-            // Calculate dimensions
             val textSize = textLayoutResult.size
             val horizontalPaddingPx = horizontalPadding.toPx()
             val verticalPaddingPx = verticalPadding.toPx()
-
             val buttonWidth = maxOf(
                 textSize.width + horizontalPaddingPx * 2f,
                 minWidth.toPx()
@@ -222,30 +150,42 @@ fun SecondaryGlassButton(
                 textSize.height + verticalPaddingPx * 2f,
                 minHeight.toPx()
             )
-
             val radiusPx = cornerRadius.toPx()
             val strokeWidthPx = borderWidth.toPx()
             val halfStrokeWidth = strokeWidthPx / 2f
 
-            // Get current animated values
-            val currentShadowAlpha = shadowAlphaAnimatable.value
-            val currentTopAlpha = topAlphaAnimatable.value
-            val currentBottomAlpha = bottomAlphaAnimatable.value
-            val currentBorderAlpha = borderAlphaAnimatable.value
-            val currentBorderProgress = borderColorProgressAnimatable.value
-            val currentBackgroundProgress = backgroundColorProgressAnimatable.value
+            val shadowAlpha = 1f - animatedProgress
+            val topAlpha = lerp(
+                normalGradientAlphas.first,
+                pressedGradientAlphas.first,
+                animatedProgress
+            )
+            val bottomAlpha = lerp(
+                normalGradientAlphas.second,
+                pressedGradientAlphas.second,
+                animatedProgress
+            )
 
-            // Draw shadow with compatibility for all Android versions
-            if (currentShadowAlpha > 0.01f) {
+            val currentBaseColor = lerp(
+                start = baseColor,
+                stop = pressedBackgroundColor,
+                fraction = animatedProgress
+            )
+            val currentBorderColor = lerp(
+                start = normalBorderColor.copy(alpha = 0.05f),
+                stop = pressedBorderColor.copy(alpha = 0.7f),
+                fraction = animatedProgress
+            )
+
+            // Shadow
+            if (shadowAlpha > 0.01f) {
                 val shadowOffsetPx = shadowElevation.toPx()
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    // Use BlurMaskFilter for API 28+
                     drawIntoCanvas { canvas ->
                         val shadowPaint = Paint().apply {
                             isAntiAlias = true
                             color = android.graphics.Color.argb(
-                                (currentShadowAlpha * 64).toInt(),
+                                (shadowAlpha * 64).toInt(),
                                 0, 0, 0
                             )
                             maskFilter = BlurMaskFilter(
@@ -253,25 +193,18 @@ fun SecondaryGlassButton(
                                 BlurMaskFilter.Blur.NORMAL
                             )
                         }
-
                         canvas.nativeCanvas.drawRoundRect(
-                            0f,
-                            shadowOffsetPx,
-                            buttonWidth,
-                            buttonHeight + shadowOffsetPx,
-                            radiusPx,
-                            radiusPx,
-                            shadowPaint
+                            0f, shadowOffsetPx,
+                            buttonWidth, buttonHeight + shadowOffsetPx,
+                            radiusPx, radiusPx, shadowPaint
                         )
                     }
                 } else {
-                    // Fallback: multiple shadow layers for older versions
                     val shadowLayers = 5
                     for (i in 0 until shadowLayers) {
                         val layerOffset = shadowOffsetPx * (i + 1) / shadowLayers
                         val layerAlpha =
-                            currentShadowAlpha * (1f - i.toFloat() / shadowLayers) * 0.15f
-
+                            shadowAlpha * (1f - i.toFloat() / shadowLayers) * 0.15f
                         drawRoundRect(
                             color = Color.Black.copy(alpha = layerAlpha),
                             topLeft = Offset(0f, layerOffset),
@@ -282,33 +215,18 @@ fun SecondaryGlassButton(
                 }
             }
 
-            // Interpolate between base color and pressed background color
-            val currentBaseColor = lerp(
-                start = baseColor,
-                stop = pressedBackgroundColor,
-                fraction = currentBackgroundProgress
-            )
-
-            // Draw background with vertical gradient
-            val gradientTopColor = currentBaseColor.copy(alpha = currentTopAlpha)
-            val gradientBottomColor = currentBaseColor.copy(alpha = currentBottomAlpha)
-
+            // Background gradient
+            val gradientTopColor = currentBaseColor.copy(alpha = topAlpha)
+            val gradientBottomColor = currentBaseColor.copy(alpha = bottomAlpha)
             drawRoundRect(
                 brush = Brush.verticalGradient(
-                    colors = listOf(gradientTopColor, gradientBottomColor)
+                    listOf(gradientTopColor, gradientBottomColor)
                 ),
-                topLeft = Offset.Zero,
                 size = Size(buttonWidth, buttonHeight),
                 cornerRadius = CornerRadius(radiusPx)
             )
 
-            // Draw border with smooth color transition
-            val currentBorderColor = lerp(
-                start = normalBorderColor.copy(alpha = currentBorderAlpha),
-                stop = pressedBorderColor.copy(alpha = currentBorderAlpha),
-                fraction = currentBorderProgress
-            )
-
+            // Border
             drawRoundRect(
                 color = currentBorderColor,
                 topLeft = Offset(halfStrokeWidth, halfStrokeWidth),
@@ -320,14 +238,15 @@ fun SecondaryGlassButton(
                 style = Stroke(width = strokeWidthPx)
             )
 
-            // Draw centered text
+            // Text
             drawText(
                 textLayoutResult = textLayoutResult,
                 topLeft = Offset(
-                    x = (buttonWidth - textSize.width) / 2f,
-                    y = (buttonHeight - textSize.height) / 2f
+                    (buttonWidth - textSize.width) / 2f,
+                    (buttonHeight - textSize.height) / 2f
                 )
             )
         }
     }
 }
+

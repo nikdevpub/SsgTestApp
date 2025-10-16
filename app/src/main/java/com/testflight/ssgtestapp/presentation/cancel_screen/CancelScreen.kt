@@ -1,5 +1,6 @@
 package com.testflight.ssgtestapp.presentation.cancel_screen
 
+import android.os.Build
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -19,11 +20,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.skydoves.cloudy.cloudy
 import com.testflight.ssgtestapp.R
@@ -69,7 +72,12 @@ fun CancelScreen(
             Image(
                 painter = backgroundPainter,
                 contentDescription = null,
-                modifier = backgroundModifier.cloudy(radius = 500),
+                modifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    // Hardware-accelerated blur on API 31+
+                    backgroundModifier.blur(40.dp)
+                } else {
+                    backgroundModifier.cloudy(500)
+                },
                 contentScale = ContentScale.Crop
             )
             Box(
