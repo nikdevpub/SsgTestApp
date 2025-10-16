@@ -2,6 +2,7 @@ package com.testflight.ssgtestapp.ui.components
 
 import android.graphics.BlurMaskFilter
 import android.graphics.Paint
+import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
@@ -53,6 +54,7 @@ import kotlin.math.roundToInt
  * @param modifier Layout modifier for positioning and sizing
  * @param onPressChange Optional callback notifying press state changes (true = pressed, false = released)
  * @param baseColor Base color for the gradient background
+ * @param pressedBackgroundColor Background color when button is pressed
  * @param normalGradientAlphas Gradient alpha values (top, bottom) in normal state
  * @param pressedGradientAlphas Gradient alpha values (top, bottom) in pressed state
  * @param normalBorderColor Border color in normal state
@@ -77,7 +79,8 @@ fun SecondaryGlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onPressChange: ((Boolean) -> Unit)? = null,
-    baseColor: Color = Color(0xFF5B7197),
+    baseColor: Color = Color(0xFF6883A9),
+    pressedBackgroundColor: Color = Color(0xFF6883A9),
     normalGradientAlphas: Pair<Float, Float> = 0.35f to 0.25f,
     pressedGradientAlphas: Pair<Float, Float> = 0.2f to 0.15f,
     normalBorderColor: Color = Color.White,
@@ -135,6 +138,7 @@ fun SecondaryGlassButton(
     val bottomAlphaAnimatable = remember { Animatable(normalGradientAlphas.second) }
     val borderAlphaAnimatable = remember { Animatable(0.05f) }
     val borderColorProgressAnimatable = remember { Animatable(0f) }
+    val backgroundColorProgressAnimatable = remember { Animatable(0f) }
 
     // Animate all values simultaneously when press state changes
     LaunchedEffect(isPressed) {
@@ -175,13 +179,12 @@ fun SecondaryGlassButton(
                     animationSpec = springSpec
                 )
             }
-        }
-    }
-
-    // Reusable paint object for shadow rendering
-    val shadowPaint = remember {
-        Paint().apply {
-            isAntiAlias = true
+            launch {
+                backgroundColorProgressAnimatable.animateTo(
+                    targetValue = if (isPressed) 1f else 0f,
+                    animationSpec = springSpec
+                )
+            }
         }
     }
 
@@ -234,38 +237,65 @@ fun SecondaryGlassButton(
             val currentBottomAlpha = bottomAlphaAnimatable.value
             val currentBorderAlpha = borderAlphaAnimatable.value
             val currentBorderProgress = borderColorProgressAnimatable.value
+            val currentBackgroundProgress = backgroundColorProgressAnimatable.value
 
-            // Draw shadow with blur effect (only when visible)
+            // Draw shadow with compatibility for all Android versions
             if (currentShadowAlpha > 0.01f) {
-                drawIntoCanvas { canvas ->
-                    val shadowOffsetPx = shadowElevation.toPx()
+                val shadowOffsetPx = shadowElevation.toPx()
 
-                    shadowPaint.apply {
-                        color = android.graphics.Color.argb(
-                            (currentShadowAlpha * 64).toInt(),
-                            0, 0, 0
-                        )
-                        maskFilter = BlurMaskFilter(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    // Use BlurMaskFilter for API 28+
+                    drawIntoCanvas { canvas ->
+                        val shadowPaint = Paint().apply {
+                            isAntiAlias = true
+                            color = android.graphics.Color.argb(
+                                (currentShadowAlpha * 64).toInt(),
+                                0, 0, 0
+                            )
+                            maskFilter = BlurMaskFilter(
+                                shadowOffsetPx,
+                                BlurMaskFilter.Blur.NORMAL
+                            )
+                        }
+
+                        canvas.nativeCanvas.drawRoundRect(
+                            0f,
                             shadowOffsetPx,
-                            BlurMaskFilter.Blur.NORMAL
+                            buttonWidth,
+                            buttonHeight + shadowOffsetPx,
+                            radiusPx,
+                            radiusPx,
+                            shadowPaint
                         )
                     }
+                } else {
+                    // Fallback: multiple shadow layers for older versions
+                    val shadowLayers = 5
+                    for (i in 0 until shadowLayers) {
+                        val layerOffset = shadowOffsetPx * (i + 1) / shadowLayers
+                        val layerAlpha =
+                            currentShadowAlpha * (1f - i.toFloat() / shadowLayers) * 0.15f
 
-                    canvas.nativeCanvas.drawRoundRect(
-                        0f,
-                        shadowOffsetPx,
-                        buttonWidth,
-                        buttonHeight + shadowOffsetPx,
-                        radiusPx,
-                        radiusPx,
-                        shadowPaint
-                    )
+                        drawRoundRect(
+                            color = Color.Black.copy(alpha = layerAlpha),
+                            topLeft = Offset(0f, layerOffset),
+                            size = Size(buttonWidth, buttonHeight),
+                            cornerRadius = CornerRadius(radiusPx)
+                        )
+                    }
                 }
             }
 
+            // Interpolate between base color and pressed background color
+            val currentBaseColor = lerp(
+                start = baseColor,
+                stop = pressedBackgroundColor,
+                fraction = currentBackgroundProgress
+            )
+
             // Draw background with vertical gradient
-            val gradientTopColor = baseColor.copy(alpha = currentTopAlpha)
-            val gradientBottomColor = baseColor.copy(alpha = currentBottomAlpha)
+            val gradientTopColor = currentBaseColor.copy(alpha = currentTopAlpha)
+            val gradientBottomColor = currentBaseColor.copy(alpha = currentBottomAlpha)
 
             drawRoundRect(
                 brush = Brush.verticalGradient(

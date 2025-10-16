@@ -75,7 +75,7 @@ fun CancelScreen(
                     onClick = { viewModel.onAction(CancelContract.Action.CancelClicked) },
                     onPressChange = { isPressed = it },
                     normalGradientAlphas = 0.9f to 0.7f,
-                    pressedGradientAlphas = 0.15f to 0.10f
+                    pressedGradientAlphas = 0.40f to 0.30f
                 )
             }
         }
