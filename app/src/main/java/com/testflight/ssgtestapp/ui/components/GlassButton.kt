@@ -1,6 +1,7 @@
 package com.testflight.ssgtestapp.ui.components
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -138,9 +139,40 @@ fun GlassButton(
         buttonState, depth, shadowHorizontalExpansion,
         shadowVerticalExpansion, shadowPressedExpansion, pressAnimationDuration
     )
+
+    // Animated values for gradient brightness adjustments
+    val lightenTop by animateFloatAsState(
+        targetValue = if (buttonState.isPressedAndEnabled) 0f else 0.15f,
+        animationSpec = spring(),
+        label = "lightenTop"
+    )
+    val lightenUpperMiddle by animateFloatAsState(
+        targetValue = if (buttonState.isPressedAndEnabled) 0f else 0.08f,
+        animationSpec = spring(),
+        label = "lightenUpperMiddle"
+    )
+    val centerDarken by animateFloatAsState(
+        targetValue = if (buttonState.isPressedAndEnabled) PRESSED_DARKEN_FACTOR else 0f,
+        animationSpec = spring(),
+        label = "centerDarken"
+    )
+    val lightenLowerMiddle by animateFloatAsState(
+        targetValue = if (buttonState.isPressedAndEnabled) PRESSED_DARKEN_FACTOR else 0.15f,
+        animationSpec = spring(),
+        label = "lightenLowerMiddle"
+    )
+    val lightenBottom by animateFloatAsState(
+        targetValue = if (buttonState.isPressedAndEnabled) PRESSED_DARKEN_FACTOR else 0.30f,
+        animationSpec = spring(),
+        label = "lightenBottom"
+    )
+
     val highlightPixelValues =
         rememberHighlightPixelValues(density, cornerRadius, edgeHighlightStrokeWidth)
-    val colors = rememberButtonColors(backgroundColor, shadowColor, shadowDarkenAmount, buttonState)
+    val colors = rememberButtonColors(
+        backgroundColor, shadowColor, shadowDarkenAmount, buttonState,
+        lightenTop, lightenUpperMiddle, centerDarken, lightenLowerMiddle, lightenBottom
+    )
 
     Box(
         modifier = modifier
@@ -329,7 +361,12 @@ private fun rememberButtonColors(
     backgroundColor: Color,
     shadowColor: Color?,
     shadowDarkenAmount: Float,
-    state: ButtonState
+    state: ButtonState,
+    lightenTop: Float,
+    lightenUpperMiddle: Float,
+    centerDarken: Float,
+    lightenLowerMiddle: Float,
+    lightenBottom: Float
 ): ButtonColors {
     // Use provided shadow color or darken background color
     val calculatedShadowColor = shadowColor ?: backgroundColor.adjustBrightness(-shadowDarkenAmount)
@@ -341,18 +378,14 @@ private fun rememberButtonColors(
                 .copy(alpha = DISABLED_ALPHA)
             Brush.verticalGradient(listOf(disabledColor, disabledColor))
         }
-        // Pressed state: simple top-to-bottom darkening gradient
-        state.isPressed -> Brush.verticalGradient(
-            listOf(backgroundColor, backgroundColor.adjustBrightness(PRESSED_DARKEN_FACTOR))
-        )
-        // Normal state: glass-morphism gradient (lighter at edges, darker in center)
+        // Normal or pressed state: animated glass-morphism gradient
         else -> Brush.verticalGradient(
             colorStops = arrayOf(
-                0.0f to backgroundColor.adjustBrightness(0.15f),  // Top: lighter (+15%)
-                0.25f to backgroundColor.adjustBrightness(0.08f), // Upper middle: slightly lighter (+8%)
-                0.5f to backgroundColor,                           // Center: base color (darkest)
-                0.75f to backgroundColor.adjustBrightness(0.15f), // Lower middle: lighter (+15%)
-                1.0f to backgroundColor.adjustBrightness(0.30f)   // Bottom: lightest (+30%)
+                0.0f to backgroundColor.adjustBrightness(lightenTop),
+                0.25f to backgroundColor.adjustBrightness(lightenUpperMiddle),
+                0.5f to backgroundColor.adjustBrightness(centerDarken),
+                0.75f to backgroundColor.adjustBrightness(lightenLowerMiddle),
+                1.0f to backgroundColor.adjustBrightness(lightenBottom)
             )
         )
     }
