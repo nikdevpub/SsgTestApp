@@ -4,7 +4,8 @@ import android.graphics.BlurMaskFilter
 import android.graphics.Paint
 import android.os.Build
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -67,8 +68,7 @@ import kotlin.math.roundToInt
  * @param verticalPadding Vertical padding around text
  * @param shadowElevation Distance of the shadow effect
  * @param pressOffset Vertical offset applied when button is pressed
- * @param springDampingRatio Damping ratio for spring animation (0.5-1.0, lower = more bounce)
- * @param springStiffness Stiffness of spring animation (higher = faster, 100-1000 recommended)
+ * @param animationDuration Duration of the animation in milliseconds (default: 150ms)
  * @param fontSize Size of the button text
  * @param fontWeight Weight of the button text
  * @param textColor Color of the button text
@@ -93,8 +93,7 @@ fun SecondaryGlassButton(
     verticalPadding: Dp = 14.dp,
     shadowElevation: Dp = 4.dp,
     pressOffset: Dp = 2.dp,
-    springDampingRatio: Float = 0.7f,
-    springStiffness: Float = 150f,
+    animationDuration: Int = 150,
     fontFamily: FontFamily = interSemiBold,
     fontSize: TextUnit = 18.sp,
     fontWeight: FontWeight = FontWeight.SemiBold,
@@ -123,12 +122,9 @@ fun SecondaryGlassButton(
         )
     }
 
-    // Spring animation specification for smooth, natural motion
-    val springSpec = remember(springDampingRatio, springStiffness) {
-        spring<Float>(
-            dampingRatio = springDampingRatio,
-            stiffness = springStiffness
-        )
+    // Tween animation specification for fixed duration with ease out
+    val tweenSpec = remember(animationDuration) {
+        tween<Float>(durationMillis = animationDuration, easing = EaseOut)
     }
 
     // Animatable values for ultra-smooth transitions
@@ -146,43 +142,43 @@ fun SecondaryGlassButton(
             launch {
                 shadowAlphaAnimatable.animateTo(
                     targetValue = if (isPressed) 0f else 1f,
-                    animationSpec = springSpec
+                    animationSpec = tweenSpec
                 )
             }
             launch {
                 verticalOffsetAnimatable.animateTo(
                     targetValue = if (isPressed) pressOffset.value else 0f,
-                    animationSpec = springSpec
+                    animationSpec = tweenSpec
                 )
             }
             launch {
                 topAlphaAnimatable.animateTo(
                     targetValue = if (isPressed) pressedGradientAlphas.first else normalGradientAlphas.first,
-                    animationSpec = springSpec
+                    animationSpec = tweenSpec
                 )
             }
             launch {
                 bottomAlphaAnimatable.animateTo(
                     targetValue = if (isPressed) pressedGradientAlphas.second else normalGradientAlphas.second,
-                    animationSpec = springSpec
+                    animationSpec = tweenSpec
                 )
             }
             launch {
                 borderAlphaAnimatable.animateTo(
                     targetValue = if (isPressed) 0.7f else 0.05f,
-                    animationSpec = springSpec
+                    animationSpec = tweenSpec
                 )
             }
             launch {
                 borderColorProgressAnimatable.animateTo(
                     targetValue = if (isPressed) 1f else 0f,
-                    animationSpec = springSpec
+                    animationSpec = tweenSpec
                 )
             }
             launch {
                 backgroundColorProgressAnimatable.animateTo(
                     targetValue = if (isPressed) 1f else 0f,
-                    animationSpec = springSpec
+                    animationSpec = tweenSpec
                 )
             }
         }
