@@ -50,7 +50,7 @@ fun CancelScreen(
             Image(
                 painter = backgroundPainter,
                 contentDescription = null,
-                modifier = backgroundModifier.cloudy(radius = 300),
+                modifier = backgroundModifier.cloudy(radius = 500),
                 contentScale = ContentScale.Crop
             )
             Box(
@@ -75,7 +75,7 @@ fun CancelScreen(
                     onClick = { viewModel.onAction(CancelContract.Action.CancelClicked) },
                     onPressChange = { isPressed = it },
                     normalGradientAlphas = 0.9f to 0.7f,
-                    pressedGradientAlphas = 0.40f to 0.30f
+                    pressedGradientAlphas = 0.30f to 0.40f
                 )
             }
         }

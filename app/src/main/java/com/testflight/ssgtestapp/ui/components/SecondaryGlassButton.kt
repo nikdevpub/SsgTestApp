@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.testflight.ssgtestapp.ui.theme.ptSansFontFamily
+import com.testflight.ssgtestapp.ui.theme.interSemiBold
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -95,9 +95,9 @@ fun SecondaryGlassButton(
     pressOffset: Dp = 2.dp,
     springDampingRatio: Float = 0.7f,
     springStiffness: Float = 150f,
-    fontFamily: FontFamily = ptSansFontFamily,
+    fontFamily: FontFamily = interSemiBold,
     fontSize: TextUnit = 18.sp,
-    fontWeight: FontWeight = FontWeight.Bold,
+    fontWeight: FontWeight = FontWeight.SemiBold,
     textColor: Color = Color.White
 ) {
     // Track press state

@@ -9,6 +9,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.testflight.ssgtestapp.R
 
+val interSemiBold = FontFamily(
+    Font(R.font.inter_18pt_semi_bold, FontWeight.SemiBold)
+)
+
 val ptSansFontFamily = FontFamily(
     Font(R.font.pt_sans_regular, FontWeight.Normal),
     Font(R.font.pt_sans_italic, FontWeight.Normal, FontStyle.Italic),
