@@ -104,9 +104,9 @@ fun GlassButton(
     backgroundColor: Color = Color(0xFF50B58D),
     textColor: Color = Color.White,
     cornerRadius: Dp = 19.dp,
-    depth: Dp = 12.dp,
+    depth: Dp = 18.dp,
     shadowHorizontalExpansion: Dp = 2.dp,
-    shadowVerticalExpansion: Dp = 12.dp,
+    shadowVerticalExpansion: Dp = 2.dp,
     shadowPressedExpansion: Dp = 1.dp,
     shadowColor: Color? = null,
     shadowDarkenAmount: Float = 0.28f,
@@ -285,19 +285,11 @@ private fun rememberAnimatedValues(
         label = "yOffset"
     )
 
-    // Animate horizontal shadow: reduce when pressed
-    val animatedShadowHorizontal by animateDpAsState(
-        targetValue = if (state.isPressedAndEnabled) shadowPressedExpansion else shadowHorizontalExpansion,
-        animationSpec = spring(),
-        label = "shadowHorizontal"
-    )
+    // Horizontal shadow stays constant - no animation
+    val animatedShadowHorizontal = shadowHorizontalExpansion
 
-    // Animate vertical shadow: reduce when pressed
-    val animatedShadowVertical by animateDpAsState(
-        targetValue = if (state.isPressedAndEnabled) shadowPressedExpansion else shadowVerticalExpansion,
-        animationSpec = spring(),
-        label = "shadowVertical"
-    )
+    // Vertical shadow stays constant - no animation
+    val animatedShadowVertical = shadowVerticalExpansion
 
     return AnimatedValues(
         animatedDepth,
